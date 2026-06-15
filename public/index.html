@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seamless Note </title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" href="https://ik.imagekit.io/yuidev25/Hera?updatedAt=1781458984059" type="image/png">
+    
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+        }
+        /* Transisi halus untuk modal dan toast */
+        .fade-in { animation: fadeIn 0.2s ease-in-out; }
+        .slide-up { animation: slideUp 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
+        /* Custom Scrollbar yang imut */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #FFF0F5; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #FFB7C5; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #FF9EAF; }
+    </style>
+</head>
+<body class="bg-[#FFF5F7] text-gray-700 min-h-screen flex flex-col">
+
+    <header class="bg-indigo-600 text-white p-5 shadow-sm rounded-b-3xl">
+        <div class="container mx-auto flex justify-between items-center max-w-4xl">
+            <h1 class="text-2xl font-extrabold tracking-wide drop-shadow-sm flex items-center gap-2">
+                <img src="https://ik.imagekit.io/yuidev25/Hera?updatedAt=1781458984059" alt="Logo" class="w-8 h-auto rounded-full">
+                Seamless Note
+            </h1>
+            <button onclick="startInputFlow()" class="bg-white/90 text-indigo-600 px-5 py-2.5 rounded-full font-bold text-sm sm:text-base hover:bg-white hover:scale-105 hover:shadow-md transition-all">
+                <i class="fas fa-plus mr-1"></i> Kosakata
+            </button>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-4 flex-grow flex flex-col gap-6 max-w-4xl mt-2 mb-6">
+        
+        <div class="flex flex-wrap gap-3">
+            <button onclick="downloadJSON()" class="bg-white text-indigo-400 border-2 border-indigo-100 px-4 py-2.5 rounded-full text-sm font-bold hover:bg-indigo-50 transition shadow-sm flex items-center gap-2">
+                <i class="fas fa-download"></i> Download to JSON
+            </button>
+            <button onclick="copyJSON()" class="bg-white text-pink-400 border-2 border-pink-100 px-4 py-2.5 rounded-full text-sm font-bold hover:bg-pink-50 transition shadow-sm flex items-center gap-2">
+                <i class="fas fa-copy"></i> Copy Tabel to JSON
+            </button>
+            <button onclick="copyText()" class="bg-white text-purple-400 border-2 border-purple-100 px-4 py-2.5 rounded-full text-sm font-bold hover:bg-purple-50 transition shadow-sm flex items-center gap-2">
+                <i class="fas fa-copy"></i> Copy Data Table
+            </button>
+            <button onclick="confirmClearAll()" class="bg-[#FFE5E5] text-rose-500 border-2 border-rose-200 px-4 py-2.5 rounded-full text-sm font-bold hover:bg-[#FFD1D1] transition shadow-sm ml-auto flex items-center gap-2">
+                <i class="fas fa-trash"></i> Hapus Semua
+            </button>
+        </div>
+
+        <div class="bg-white shadow-sm rounded-3xl overflow-x-auto border-2 border-pink-50">
+            <table class="w-full text-left border-collapse min-w-[600px]">
+                <thead>
+                    <tr class="bg-[#FFF0F5] text-[#D8849E] border-b-2 border-pink-100">
+                        <th class="p-4 text-base font-bold rounded-tl-3xl">Kosakata / Kanji</th>
+                        <th class="p-4 text-base font-bold">Furigana</th>
+                        <th class="p-4 text-base font-bold">Arti (Indonesia)</th>
+                        <th class="p-4 text-base font-bold text-center rounded-tr-3xl">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody" class="divide-y-2 divide-pink-50 text-base font-medium">
+                    </tbody>
+            </table>
+            
+            <div id="emptyState" class="hidden p-12 text-center flex flex-col items-center justify-center">
+                <img src="https://cdn-icons-png.flaticon.com/512/4680/4680018.png" alt="Cute Empty" class="w-24 h-24 mb-4 opacity-50 grayscale">
+                <p class="text-pink-400 font-bold text-lg">Kosong nih! (´• ω •`)</p>
+                <p class="text-gray-400 text-sm mt-1">Yuk tambah kosakata pertamamu di atas~</p>
+            </div>
+        </div>
+    </main>
+
+    <div id="modalOverlay" class="fixed inset-0 bg-pink-900/30 backdrop-blur-sm hidden flex justify-center items-center z-50 p-4">
+        
+        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden fade-in relative border-4 border-white">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-300 hover:text-pink-400 p-2 bg-gray-50 rounded-full transition">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+
+            <div class="bg-[#FFF5F7] p-5 border-b-2 border-pink-50 flex justify-center items-center gap-3 text-sm font-bold text-pink-200">
+                <span id="step1Indicator" class="text-pink-500 bg-pink-100 px-3 py-1 rounded-full">1. Kanji</span>
+                <i class="fas fa-chevron-right text-xs"></i>
+                <span id="step2Indicator" class="px-3 py-1 rounded-full">2. Furigana</span>
+                <i class="fas fa-chevron-right text-xs"></i>
+                <span id="step3Indicator" class="px-3 py-1 rounded-full">3. Arti</span>
+            </div>
+
+            <div class="p-8">
+                <div id="step1" class="hidden slide-up">
+                    <label class="block text-base font-bold text-gray-700 mb-3"><i class="fas fa-language text-pink-400 mr-2"></i>Masukkan Kosakata / Kanji</label>
+                    <input type="text" id="inputKanji" class="w-full bg-pink-50 border-2 border-pink-100 rounded-2xl p-4 focus:outline-none focus:border-pink-300 focus:bg-white text-lg font-medium text-gray-700 mb-6 transition" placeholder="Contoh: 頑張る" autocomplete="off">
+                    <button onclick="nextStep(2)" class="w-full bg-gradient-to-r from-pink-400 to-purple-400 text-white font-bold text-lg py-4 rounded-2xl hover:opacity-90 transition shadow-md">Lanjut <i class="fas fa-arrow-right ml-2"></i></button>
+                </div>
+
+                <div id="step2" class="hidden slide-up">
+                    <label class="block text-base font-bold text-gray-700 mb-3"><i class="fas fa-comment-dots text-purple-400 mr-2"></i>Masukkan Furigana</label>
+                    <input type="text" id="inputFurigana" class="w-full bg-purple-50 border-2 border-purple-100 rounded-2xl p-4 focus:outline-none focus:border-purple-300 focus:bg-white text-lg font-medium text-gray-700 mb-6 transition" placeholder="Contoh: がんばる" autocomplete="off">
+                    <div class="flex gap-3">
+                        <button onclick="goToStep(1)" class="w-1/3 bg-gray-100 text-gray-500 font-bold py-4 rounded-2xl hover:bg-gray-200 transition"><i class="fas fa-arrow-left"></i></button>
+                        <button onclick="nextStep(3)" class="w-2/3 bg-gradient-to-r from-purple-400 to-indigo-400 text-white font-bold text-lg py-4 rounded-2xl hover:opacity-90 transition shadow-md">Lanjut <i class="fas fa-arrow-right ml-2"></i></button>
+                    </div>
+                </div>
+
+                <div id="step3" class="hidden slide-up">
+                    <label class="block text-base font-bold text-gray-700 mb-3"><i class="fas fa-book text-indigo-400 mr-2"></i>Masukkan Arti (Indonesia)</label>
+                    <input type="text" id="inputArti" class="w-full bg-indigo-50 border-2 border-indigo-100 rounded-2xl p-4 focus:outline-none focus:border-indigo-300 focus:bg-white text-lg font-medium text-gray-700 mb-6 transition" placeholder="Contoh: Berusaha keras" autocomplete="off">
+                    <div class="flex gap-3">
+                        <button onclick="goToStep(2)" class="w-1/3 bg-gray-100 text-gray-500 font-bold py-4 rounded-2xl hover:bg-gray-200 transition"><i class="fas fa-arrow-left"></i></button>
+                        <button onclick="saveData()" class="w-2/3 bg-gradient-to-r from-indigo-400 to-[#92C7CF] text-white font-bold text-lg py-4 rounded-2xl hover:opacity-90 transition shadow-md"><i class="fas fa-check-circle mr-2"></i> Simpan</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="deleteConfirmModal" class="fixed inset-0 bg-rose-900/30 backdrop-blur-sm hidden flex justify-center items-center z-[60] p-4 fade-in">
+        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-sm p-8 text-center border-4 border-white">
+            <div class="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-5 text-rose-400 text-4xl shadow-inner">
+                <i class="fas fa-trash-can border-2 border-dashed border-rose-200 p-3 rounded-full"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-700 mb-2">Hapus Kosakata?</h3>
+            <p class="text-base text-gray-500 mb-8 font-medium">Yakin mau menghapus kosakata ini dari catatanmu?</p>
+            <div class="flex gap-3">
+                <button onclick="cancelDelete()" class="w-1/2 py-3.5 rounded-2xl bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition text-base">Batal</button>
+                <button onclick="executeDelete()" class="w-1/2 py-3.5 rounded-2xl bg-rose-400 text-white font-bold hover:bg-rose-500 transition shadow-md text-base">Ya, Hapus</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="clearAllConfirmModal" class="fixed inset-0 bg-red-900/40 backdrop-blur-sm hidden flex justify-center items-center z-[60] p-4 fade-in">
+        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-sm p-8 text-center border-4 border-white">
+            <div class="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-5 text-red-500 text-4xl shadow-inner">
+                <i class="fas fa-triangle-exclamation"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-700 mb-2">Hapus SEMUA Data?</h3>
+            <p class="text-base text-gray-500 mb-8 font-medium">Wah, ini akan menghapus semua kosakata! Tindakan ini tidak bisa dibatalkan lho.</p>
+            <div class="flex gap-3">
+                <button onclick="cancelClearAll()" class="w-1/2 py-3.5 rounded-2xl bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition text-base">Batal</button>
+                <button onclick="executeClearAll()" class="w-1/2 py-3.5 rounded-2xl bg-red-500 text-white font-bold hover:bg-red-600 transition shadow-md text-base">Hapus Semua</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="fixed bottom-6 right-6 flex flex-col gap-3 z-[70]"></div>
+
+    <footer class="text-center py-6 text-sm font-bold text-pink-400/80 mt-auto">
+        <p>© Seamless Note by ひろ</p>
+    </footer>
+
+    <script>
+        // State Management
+        let vocabData = JSON.parse(localStorage.getItem('nihongo_notes')) || [];
+        let currentEntry = { kanji: '', furigana: '', arti: '' };
+        
+        // Trackers for Edit & Delete
+        let editIndex = null;
+        let deleteIndex = null;
+
+        // DOM Elements
+        const modalOverlay = document.getElementById('modalOverlay');
+        const inputKanji = document.getElementById('inputKanji');
+        const inputFurigana = document.getElementById('inputFurigana');
+        const inputArti = document.getElementById('inputArti');
+
+        // Initialize App (LOGIC ASLI DIKEMBALIKAN UTUH ✨)
+        window.onload = () => {
+            renderTable();
+            // Tampilkan popup saat pertama kali dimuat langsung eksekusi
+            startInputFlow();
+        };
+
+        // --- Modal & Flow Logic ---
+        function startInputFlow() {
+            editIndex = null; // Reset edit state
+            currentEntry = { kanji: '', furigana: '', arti: '' };
+            inputKanji.value = '';
+            inputFurigana.value = '';
+            inputArti.value = '';
+            modalOverlay.classList.remove('hidden');
+            goToStep(1);
+        }
+
+        function closeModal() {
+            modalOverlay.classList.add('hidden');
+            editIndex = null;
+        }
+
+        function goToStep(step) {
+            // Hide all steps
+            document.getElementById('step1').classList.add('hidden');
+            document.getElementById('step2').classList.add('hidden');
+            document.getElementById('step3').classList.add('hidden');
+
+            // Reset indicators (default pastel colors)
+            document.getElementById('step1Indicator').className = 'text-pink-300';
+            document.getElementById('step2Indicator').className = 'text-pink-300';
+            document.getElementById('step3Indicator').className = 'text-pink-300';
+
+            // Show current step & highlight indicator
+            document.getElementById(`step${step}`).classList.remove('hidden');
+            
+            // Apply distinct pastel badge colors per step
+            if(step === 1) document.getElementById('step1Indicator').className = 'text-pink-600 bg-pink-100 px-3 py-1 rounded-full shadow-sm';
+            if(step === 2) document.getElementById('step2Indicator').className = 'text-purple-600 bg-purple-100 px-3 py-1 rounded-full shadow-sm';
+            if(step === 3) document.getElementById('step3Indicator').className = 'text-indigo-600 bg-indigo-100 px-3 py-1 rounded-full shadow-sm';
+
+            // Auto focus
+            if(step === 1) setTimeout(() => inputKanji.focus(), 100);
+            if(step === 2) setTimeout(() => inputFurigana.focus(), 100);
+            if(step === 3) setTimeout(() => inputArti.focus(), 100);
+        }
+
+        function nextStep(step) {
+            if (step === 2) {
+                if (!inputKanji.value.trim()) {
+                    showToast('Kanji tidak boleh kosong ya~ (｡•́︿•̀｡)', 'error');
+                    inputKanji.focus();
+                    return;
+                }
+                currentEntry.kanji = inputKanji.value.trim();
+            } else if (step === 3) {
+                if (!inputFurigana.value.trim()) {
+                    showToast('Furigana harus diisi dong~ (｡•́︿•̀｡)', 'error');
+                    inputFurigana.focus();
+                    return;
+                }
+                currentEntry.furigana = inputFurigana.value.trim();
+            }
+            goToStep(step);
+        }
+
+        function saveData() {
+            if (!inputArti.value.trim()) {
+                showToast('Artinya jangan lupa diisi! ヽ(>∀<☆)ノ', 'error');
+                inputArti.focus();
+                return;
+            }
+            currentEntry.arti = inputArti.value.trim();
+
+            try {
+                if (editIndex !== null) {
+                    // Update data yang ada
+                    vocabData[editIndex] = {...currentEntry};
+                    showToast('Yey! Data berhasil diupdate ✨', 'success');
+                    editIndex = null;
+                } else {
+                    // Simpan data baru
+                    vocabData.push({...currentEntry});
+                    showToast('Yey! Kosakata tersimpan ', 'success');
+                }
+                
+                localStorage.setItem('nihongo_notes', JSON.stringify(vocabData));
+                renderTable();
+                
+                // Reset untuk entri selanjutnya
+                startInputFlow();
+            } catch (error) {
+                showToast('Waduh, gagal menyimpan data!', 'error');
+            }
+        }
+
+        // --- Fitur Edit & Hapus Logic ---
+        function editData(index) {
+            editIndex = index;
+            currentEntry = {...vocabData[index]};
+            
+            // Set input values
+            inputKanji.value = currentEntry.kanji;
+            inputFurigana.value = currentEntry.furigana;
+            inputArti.value = currentEntry.arti;
+            
+            modalOverlay.classList.remove('hidden');
+            goToStep(1);
+        }
+
+        // Custom Confirmation Trigger
+        function confirmDelete(index) {
+            deleteIndex = index;
+            document.getElementById('deleteConfirmModal').classList.remove('hidden');
+        }
+
+        function cancelDelete() {
+            deleteIndex = null;
+            document.getElementById('deleteConfirmModal').classList.add('hidden');
+        }
+
+        function executeDelete() {
+            if (deleteIndex !== null) {
+                vocabData.splice(deleteIndex, 1);
+                localStorage.setItem('nihongo_notes', JSON.stringify(vocabData));
+                renderTable();
+                showToast('Kosakata dihapus 🗑️', 'success');
+                deleteIndex = null;
+                document.getElementById('deleteConfirmModal').classList.add('hidden');
+            }
+        }
+
+        function confirmClearAll() {
+            if (vocabData.length === 0) return showToast('Datanya sudah kosong kok~', 'error');
+            document.getElementById('clearAllConfirmModal').classList.remove('hidden');
+        }
+
+        function cancelClearAll() {
+            document.getElementById('clearAllConfirmModal').classList.add('hidden');
+        }
+
+        function executeClearAll() {
+            vocabData = [];
+            localStorage.removeItem('nihongo_notes');
+            renderTable();
+            showToast('Semua catatan dibersihkan! 🧹', 'success');
+            document.getElementById('clearAllConfirmModal').classList.add('hidden');
+        }
+
+        // --- Table Render Logic ---
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            const emptyState = document.getElementById('emptyState');
+            
+            tbody.innerHTML = '';
+            
+            if (vocabData.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                // Render dari data terbaru ke terlama (reverse)
+                for (let i = vocabData.length - 1; i >= 0; i--) {
+                    const item = vocabData[i];
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-[#FFF5F7] transition duration-200 group';
+                    tr.innerHTML = `
+                        <td class="p-4 border-r-2 border-pink-50 text-pink-700 font-extrabold text-lg sm:text-xl">${item.kanji}</td>
+                        <td class="p-4 border-r-2 border-pink-50 text-purple-500 font-semibold">${item.furigana}</td>
+                        <td class="p-4 text-gray-600 font-medium">${item.arti}</td>
+                        <td class="p-4 text-center">
+                            <div class="flex justify-center gap-3 opacity-80 group-hover:opacity-100 transition">
+                                <button onclick="editData(${i})" class="w-10 h-10 rounded-full bg-blue-50 text-blue-400 hover:bg-blue-400 hover:text-white transition shadow-sm" title="Edit">
+                                    <i class="fas fa-pen"></i>
+                                </button>
+                                <button onclick="confirmDelete(${i})" class="w-10 h-10 rounded-full bg-rose-50 text-rose-400 hover:bg-rose-400 hover:text-white transition shadow-sm" title="Hapus">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            }
+        }
+
+        // --- Export & Copy Logic (Tetap Utuh) ---
+        function downloadJSON() {
+            if (vocabData.length === 0) return showToast('Tidak ada data untuk didownload', 'error');
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(vocabData, null, 2));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "seamless_note.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+            showToast('Yeay, JSON berhasil diunduh! 🎉', 'success');
+        }
+
+        function copyJSON() {
+            if (vocabData.length === 0) return showToast('Tidak ada data untuk disalin', 'error');
+            navigator.clipboard.writeText(JSON.stringify(vocabData, null, 2))
+                .then(() => showToast('JSON disalin ke clipboard! 📋', 'success'))
+                .catch(() => showToast('Gagal menyalin JSON', 'error'));
+        }
+
+        function copyText() {
+            if (vocabData.length === 0) return showToast('Tidak ada data untuk disalin', 'error');
+            const textFormat = vocabData.map(item => `${item.kanji}：${item.furigana}：${item.arti}`).join('\n');
+            navigator.clipboard.writeText(textFormat)
+                .then(() => showToast('Teks disalin ke clipboard! 📝', 'success'))
+                .catch(() => showToast('Gagal menyalin Teks', 'error'));
+        }
+
+        // --- Custom Toast Alert Logic ---
+        function showToast(message, type = 'success') {
+            const toastContainer = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            const baseClasses = "flex items-center px-5 py-4 rounded-2xl shadow-xl text-white text-base font-bold slide-up border-2 border-white/20";
+            
+            // Soft pastel colors for toast
+            const colorClass = type === 'success' ? "bg-gradient-to-r from-emerald-400 to-teal-400" : "bg-gradient-to-r from-rose-400 to-pink-400";
+            
+            const iconSvg = type === 'success' 
+                ? `<i class="fas fa-check-circle text-xl mr-3"></i>`
+                : `<i class="fas fa-exclamation-circle text-xl mr-3"></i>`;
+
+            toast.className = `${baseClasses} ${colorClass}`;
+            toast.innerHTML = `${iconSvg} <span>${message}</span>`;
+            
+            toastContainer.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.replace('slide-up', 'opacity-0');
+                toast.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                toast.style.transform = 'translateY(10px)';
+                setTimeout(() => toast.remove(), 400);
+            }, 3000);
+        }
+
+        // --- Keyboard Support ---
+        inputKanji.addEventListener('keypress', function (e) { if (e.key === 'Enter') nextStep(2); });
+        inputFurigana.addEventListener('keypress', function (e) { if (e.key === 'Enter') nextStep(3); });
+        inputArti.addEventListener('keypress', function (e) { if (e.key === 'Enter') saveData(); });
+    </script>
+</body>
+</html>
